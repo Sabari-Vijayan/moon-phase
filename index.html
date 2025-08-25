@@ -248,9 +248,18 @@
         <div id="error" class="error" style="display: none;"></div>
 
         <div id="moonPhases" class="moon-phases"></div>
+        
+        <div id="showMoreContainer" style="text-align: center; margin-top: 30px; display: none;">
+            <button onclick="showNext7Days()" id="showMoreBtn" style="padding: 15px 30px; font-size: 18px;">
+                🌙 Show Next 7 Days
+            </button>
+        </div>
     </div>
 
     <script>
+        // Store the full data globally so we can show more days later
+        let fullMoonData = [];
+
         function getMoonPhaseName(phase) {
             if (phase === 0 || phase === 1) return "New Moon";
             if (phase > 0 && phase < 0.25) return "Waxing Crescent";
@@ -320,7 +329,7 @@
         }
 
         // WARNING: This API key is visible to anyone who views the page source
-        const API_KEY = 'KVH3YCUEA3JV75L8GXNMSF2BX'; // Look I know this is not good but please let me pass this time, I currently dont have the time to fix this as I am having my exams this week!
+        const API_KEY = 'KVH3YCUEA3JV75L8GXNMSF2BX'; // Replace with your actual API key
 
         async function fetchMoonPhases() {
             const location = document.getElementById('location').value.trim();
@@ -355,9 +364,14 @@
                     throw new Error('No data received from the API');
                 }
 
-                // Take only the first 8 days (today + next 7 days)
-                const daysToShow = data.days.slice(0, 8);
-                displayMoonPhases(daysToShow);
+                // Take the first 8 days (today + next 7 days) and store them
+                fullMoonData = data.days.slice(0, 8);
+                
+                // Initially show only today's moon phase
+                displayMoonPhases([fullMoonData[0]], true);
+                
+                // Show the "Show Next 7 Days" button
+                document.getElementById('showMoreContainer').style.display = 'block';
                 
             } catch (error) {
                 showError(`Error fetching data: ${error.message}`);
@@ -367,13 +381,16 @@
             }
         }
 
-        function displayMoonPhases(days) {
+        function displayMoonPhases(days, showingCurrentOnly = false) {
             const moonPhasesEl = document.getElementById('moonPhases');
             moonPhasesEl.innerHTML = '';
 
             days.forEach((day, index) => {
                 const dayCard = document.createElement('div');
-                dayCard.className = `day-card ${index === 0 ? 'current' : ''}`;
+                // If showing current only, it's always the current day
+                // Otherwise, check if it's the first day in the full array
+                const isCurrentDay = showingCurrentOnly || index === 0;
+                dayCard.className = `day-card ${isCurrentDay ? 'current' : ''}`;
 
                 const moonPhase = parseFloat(day.moonphase);
                 const phaseName = getMoonPhaseName(moonPhase);
@@ -406,6 +423,14 @@
 
                 moonPhasesEl.appendChild(dayCard);
             });
+        }
+
+        function showNext7Days() {
+            // Show all 8 days (today + next 7)
+            displayMoonPhases(fullMoonData);
+            
+            // Hide the "Show Next 7 Days" button
+            document.getElementById('showMoreContainer').style.display = 'none';
         }
 
         function showError(message) {
